@@ -118,7 +118,7 @@ public struct KeyboardAwareShortcutButton<LabelContent: View>: View {
     if char_fb == KeyEquivalent.pageDown.character { return "⇟" }
     if char_fb == KeyEquivalent.clear.character { return "Clear" }
     else {
-      if char_fb.unicodeScalars.first?.properties.generalCategory == .controlCharacter { return "?" }
+      if char_fb.unicodeScalars.first?.properties.generalCategory == .control { return "?" }
       if char_fb.isLetter { return String(char_fb).uppercased() }
       if char_fb.isNumber || char_fb.isSymbol || char_fb.isPunctuation { return String(char_fb) }
       if char_fb.isASCII && !char_fb.isWhitespace { return String(char_fb).uppercased() }
