@@ -7,8 +7,8 @@ let package = Package(
   name: "KeyboardAwareShortcutButton",
   platforms: [
     .iOS(.v16),
-//    .macOS(.v11), // For ExternalKeyboardMonitor (GCKeyboard)
-//    .tvOS(.v14)   // For ExternalKeyboardMonitor (GCKeyboard)
+    .macOS(.v12), // For ExternalKeyboardMonitor (GCKeyboard)
+    .tvOS(.v14)   // For ExternalKeyboardMonitor (GCKeyboard)
     // watchOS is excluded as GCKeyboard and .onKeyPress are less relevant or have different availability
   ],
   products: [
