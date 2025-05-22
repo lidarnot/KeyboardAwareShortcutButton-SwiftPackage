@@ -147,7 +147,7 @@ public struct KeyboardAwareShortcutButton<LabelContent: View>: View {
     }
   }
   
-  private func modifiersDisplayString(for modifiers: EventModifiers) -> String {
+  func modifiersDisplayString(for modifiers: EventModifiers) -> String {
     var displayString = ""
     if modifiers.contains(.control) { displayString += "⌃" }
     if modifiers.contains(.option) { displayString += "⌥" }

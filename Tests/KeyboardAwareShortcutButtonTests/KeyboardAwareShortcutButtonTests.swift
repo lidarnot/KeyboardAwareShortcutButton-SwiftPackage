@@ -1,37 +1,41 @@
-// Tests/KeyboardAwareShortcutButtonTests/KeyboardAwareShortcutButtonTests.swift
 import XCTest
-@testable import KeyboardAwareShortcutButton // Allows access to internal members for testing
-import SwiftUI // For KeyEquivalent, EventModifiers etc.
-
-import KeyboardAwareShortcutButton
+@testable import KeyboardAwareShortcutButton
 import SwiftUI
 
-struct ContentView: View {
-    var body: some View {
-        KeyboardAwareShortcutButton(title: "My Action", action: {
-            print("Action tapped!")
-        })
-    }
-}
-
-final class KeyboardAwareShortcutButtonTests: XCTestCase {
-  func testExample() throws {
+final class KeyboardAwareShortcutButtonInitializationTests: XCTestCase { // Renamed class
+  
+  func testInitialization_WithTitle() {
+    let actionExecuted = XCTestExpectation(description: "Action executed")
+    actionExecuted.isInverted = true // We don't expect it to be called on init
     
-    // Example: Test initialization or a specific internal function if needed
-    // let monitor = ExternalKeyboardMonitor()
-    // XCTAssertFalse(monitor.isExternalKeyboardConnected, "Should be false initially before any async updates")
+    let sut = KeyboardAwareShortcutButton(title: "My Button", action: {
+      actionExecuted.fulfill()
+    })
     
-    // Note: Testing SwiftUI Views and @State/@StateObject behavior directly in XCTest
-    // can be complex. Consider UI tests or specialized SwiftUI testing libraries for comprehensive View testing.
+    XCTAssertNotNil(sut, "Button should initialize with a title.")
+    // We can't easily inspect the Text content here without ViewInspector
+    // but we know it compiled and initialized.
+    
+    wait(for: [actionExecuted], timeout: 0.1) // Ensure action wasn't called
   }
   
-  // func testKeyDisplayString_Space() {
-  //     let button = KeyboardAwareShortcutButton(title: "Test", action: {})
-  //     XCTAssertEqual(button.keyEquivalentDisplayString(for: .space), "Space")
-  // }
-  //
-  // func testKeyDisplayString_A() {
-  //     let button = KeyboardAwareShortcutButton(title: "Test", action: {})
-  //     XCTAssertEqual(button.keyEquivalentDisplayString(for: KeyEquivalent("a")), "A")
-  // }
+  func testInitialization_WithCustomLabel() {
+    let actionExecuted = XCTestExpectation(description: "Action executed")
+    actionExecuted.isInverted = true
+    
+    let sut = KeyboardAwareShortcutButton(action: {
+      actionExecuted.fulfill()
+    }, label: {
+      HStack {
+        Image(systemName: "star")
+        Text("Custom")
+      }
+    })
+    
+    XCTAssertNotNil(sut, "Button should initialize with a custom label.")
+    wait(for: [actionExecuted], timeout: 0.1)
+  }
+  
+  // Testing the actual button tap action would ideally use ViewInspector
+  // or XCUITest. For XCTest, we've just confirmed init.
 }
