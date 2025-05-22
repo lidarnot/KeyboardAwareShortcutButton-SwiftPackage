@@ -63,7 +63,7 @@ public final class ExternalKeyboardMonitor: ObservableObject {
         forName: .GCKeyboardDidConnect, object: nil, queue: .main
       ) { [weak self] _ in
         Task { @MainActor [weak self] in // Ensure main actor context for Swift 6
-            self?.updateExternalKeyboardStatus()
+          self?.updateExternalKeyboardStatus()
         }
       }
       
@@ -71,7 +71,7 @@ public final class ExternalKeyboardMonitor: ObservableObject {
         forName: .GCKeyboardDidDisconnect, object: nil, queue: .main
       ) { [weak self] _ in
         Task { @MainActor [weak self] in // Ensure main actor context for Swift 6
-            self?.updateExternalKeyboardStatus()
+          self?.updateExternalKeyboardStatus()
         }
       }
     }

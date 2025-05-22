@@ -6,9 +6,9 @@ extension KeyEquivalent {
   var isArrowKey: Bool {
     let c = self.character
     return c == KeyEquivalent.upArrow.character ||
-           c == KeyEquivalent.downArrow.character ||
-           c == KeyEquivalent.leftArrow.character ||
-           c == KeyEquivalent.rightArrow.character
+    c == KeyEquivalent.downArrow.character ||
+    c == KeyEquivalent.leftArrow.character ||
+    c == KeyEquivalent.rightArrow.character
   }
   
   var isFunctionKey: Bool {
@@ -21,16 +21,16 @@ extension KeyEquivalent {
 // MARK: - View Modifier (Internal or Public if you want to expose it)
 
 extension View {
-    /// Conditionally applies a transform to a view.
-    /// - Parameters:
-    ///   - condition: The condition to evaluate.
-    ///   - transform: The transform to apply to the source `View`.
-    /// - Returns: Either the original `View` or the modified `View` if the condition is `true`.
-    @ViewBuilder func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
-        if condition {
-            transform(self)
-        } else {
-            self
-        }
+  /// Conditionally applies a transform to a view.
+  /// - Parameters:
+  ///   - condition: The condition to evaluate.
+  ///   - transform: The transform to apply to the source `View`.
+  /// - Returns: Either the original `View` or the modified `View` if the condition is `true`.
+  @ViewBuilder func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+    if condition {
+      transform(self)
+    } else {
+      self
     }
+  }
 }
