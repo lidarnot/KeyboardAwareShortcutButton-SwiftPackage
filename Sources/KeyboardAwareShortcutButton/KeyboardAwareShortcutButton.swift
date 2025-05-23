@@ -225,7 +225,7 @@ public struct KeyboardAwareShortcutButton<LabelContent: View>: View {
     }) {
       buttonContent
     }
-      .buttonStyle(PlainButtonStyle())
+//      .buttonStyle(PlainButtonStyle())
       .accessibilityIdentifier(accessibilityIdentifierMainButton ?? "KeyboardAwareShortcutButton.mainButton")
     
     let mainButtonWithKeyboardShortcut = Group {
