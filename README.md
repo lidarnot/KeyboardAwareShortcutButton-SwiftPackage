@@ -203,12 +203,3 @@ Contributions, issues, and feature requests are welcome! Please feel free to ope
 ## License
 
 This package is available under the MIT license. See the LICENSE file for more info. (You'll need to add a LICENSE file to your repo, typically MIT).
-
-
-**Next Steps for You:**
-
-1.  **Create a `LICENSE` file:** If you don't have one, add a `LICENSE` file to your repository (e.g., choose the MIT License).
-2.  **Replace Placeholders:**
-    *   Update the GitHub repository URL in the "Installation" section: `https://github.com/your_username/KeyboardAwareShortcutButton-SwiftPackage.git`.
-3.  **Review and Adjust:** Read through the generated `README.md` and make any adjustments to better fit your package's nuances or your preferred style.
-4.  **Add to Your Repository:** Commit this `README.md` file to the root of your Swift package repository.
