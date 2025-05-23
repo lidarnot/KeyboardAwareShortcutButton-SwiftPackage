@@ -337,7 +337,6 @@ public struct KeyboardAwareShortcutButton<LabelContent: View>: View {
     }) {
       buttonContent
     }
-//      .buttonStyle(PlainButtonStyle())
       .accessibilityIdentifier(accessibilityIdentifierMainButton ?? "KeyboardAwareShortcutButton.mainButton")
     
     let mainButtonWithPrimaryShortcut = Group {
@@ -407,8 +406,7 @@ public struct KeyboardAwareShortcutButton<LabelContent: View>: View {
     
     // Apply the .keyboardShortcut for the default action (Return key) IF isDefaultActionEquivalent is true
     // This is separate so it doesn't interfere with the primary shortcut display or assignment.
-    return viewWithAssignmentHandling
-      .if(isDefaultActionEquivalent) { view in
+    return viewWithAssignmentHandling.if(isDefaultActionEquivalent) { view in
         view.keyboardShortcut(.return, modifiers: [])
       }
   }
