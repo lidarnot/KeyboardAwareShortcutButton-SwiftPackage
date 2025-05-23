@@ -38,6 +38,49 @@ public struct KeyboardAwareShortcutButton<LabelContent: View>: View {
   
   @StateObject private var externalKeyboardMonitor = ExternalKeyboardMonitor()
   
+  // MARK: - Initializers
+  /// Initializes a shortcut button with a text title and automatically derives a Command + FirstLetter shortcut.
+  /// For example, a title "Save" will default to Command+S.
+  ///
+  /// - Parameters:
+  ///   - title: The text title for the button. The first character will be used for the default shortcut key.
+  ///   - displayShortcutOverlay: Whether to display the shortcut hint overlay. Default is `true`.
+  ///   - allowShortcutAssignment: Whether shortcut assignment is enabled. Default is `false`.
+  ///   - showAssignShortcutIcon: Whether the assignment icon is shown (if assignment is allowed). Default is `false`.
+  ///   - layoutDirection: The layout direction for label and shortcut hint. Default is `.vertical`.
+  ///   - shortcutVerticalPadding: Padding for vertical layout. Default is `4`.
+  ///   - customPadding: Custom padding to override calculated amounts.
+  ///   - accessibilityIdentifierMainButton: Accessibility ID for the main button.
+  ///   - action: The action to perform when the button is tapped or shortcut is triggered.
+  public init(
+    _ title: String, // Unlabeled title for convenience
+    displayShortcutOverlay: Bool = true,
+    allowShortcutAssignment: Bool = false,
+    showAssignShortcutIcon: Bool = false,
+    layoutDirection: ShortcutButtonLayoutDirection = .vertical,
+    shortcutVerticalPadding: CGFloat = 4,
+    customPadding: CGFloat? = nil,
+    accessibilityIdentifierMainButton: String? = nil,
+    action: @escaping () -> Void
+  ) where LabelContent == Text {
+    let firstCharKey: KeyEquivalent? = title.first.map { KeyEquivalent(Character($0.lowercased())) }
+    
+    self.init(
+      initialKey: firstCharKey, // Derived key
+      initialModifiers: .command, // Default to Command
+      displayShortcutOverlay: displayShortcutOverlay,
+      allowShortcutAssignment: allowShortcutAssignment,
+      showAssignShortcutIcon: showAssignShortcutIcon,
+      layoutDirection: layoutDirection,
+      shortcutVerticalPadding: shortcutVerticalPadding,
+      customPadding: customPadding,
+      title: title, // Pass the full title for the label
+      action: action,
+      accessibilityIdentifierMainButton: accessibilityIdentifierMainButton,
+      accessibilityIdentifierAssignButton: nil // Assign button not typically used with this simple init
+    )
+  }
+  
   public init(
     initialKey: KeyEquivalent? = nil,
     initialModifiers: EventModifiers = .command,
