@@ -188,7 +188,18 @@ public struct KeyboardAwareShortcutButton<LabelContent: View>: View {
     self.label = label
     self._currentShortcutKey = State(initialValue: initialKey)
     self._currentShortcutModifiers = State(initialValue: initialModifiers)
+    
+    #if targetEnvironment(simulator)
+    // On simulator, if the mode is .automatic (either by default or explicitly),
+    // change it to .never. This provides a less cluttered UI during development
+    // since the simulator's keyboard is always "connected".
+    // If the user explicitly sets .always or .never, we respect that choice.
+    self.shortcutDisplayMode = (shortcutDisplayMode == .automatic) ? .never : shortcutDisplayMode
+    #else
+    // On a physical device, the behavior is as specified.
     self.shortcutDisplayMode = shortcutDisplayMode
+    #endif
+
     self.allowShortcutAssignment = allowShortcutAssignment
     self.showAssignShortcutIcon = showAssignShortcutIcon
     self.isDefaultActionEquivalent = isDefaultActionEquivalent // Store it

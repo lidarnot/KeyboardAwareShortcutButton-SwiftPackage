@@ -1,0 +1,1188 @@
+Current path: /Users/xx/Desktop/dev/KeyboardAwareShortcutButton-SwiftPackage
+Directory tree (ignoring specified patterns):
+.
+├── Package.swift
+├── README.md
+├── Sources
+│   └── KeyboardAwareShortcutButton
+│       ├── ExternalKeyboardMonitor.swift
+│       ├── Helpers.swift
+│       └── KeyboardAwareShortcutButton.swift
+└── Tests
+    └── KeyboardAwareShortcutButtonTests
+        ├── ExternalKeyboardMonitorTests.swift
+        ├── FormattingTests.swift
+        ├── KeyEquivalentExtensionTests.swift
+        └── KeyboardAwareShortcutButtonTests.swift
+
+5 directories, 9 files
+
+
+---
+Combined file contents:
+
+--- FILE: .gitignore ---
+.DS_Store
+/.build
+/Packages
+xcuserdata/
+DerivedData/
+.swiftpm/configuration/registries.json
+.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
+.netrc
+
+--- FILE: Package.swift ---
+// swift-tools-version:5.7
+// The swift-tools-version declares the minimum version of Swift required to build this package.
+
+import PackageDescription
+
+let package = Package(
+  name: "KeyboardAwareShortcutButton",
+  platforms: [
+    .iOS(.v16),
+    .macOS(.v12), // For ExternalKeyboardMonitor (GCKeyboard)
+    .tvOS(.v14)   // For ExternalKeyboardMonitor (GCKeyboard)
+    // watchOS is excluded as GCKeyboard and .onKeyPress are less relevant or have different availability
+  ],
+  products: [
+    // Products define the executables and libraries a package produces, making them visible to other packages.
+    .library(
+      name: "KeyboardAwareShortcutButton",
+      targets: ["KeyboardAwareShortcutButton"]),
+  ],
+  dependencies: [
+    // Dependencies declare other packages that this package depends on.
+    // .package(url: /* package url */, from: "1.0.0"),
+  ],
+  targets: [
+    // Targets are the basic building blocks of a package, defining a module or a test suite.
+    // Targets can depend on other targets in this package and products from dependencies.
+    .target(
+      name: "KeyboardAwareShortcutButton",
+      dependencies: []),
+    .testTarget( // Optional: if you plan to add tests
+      name: "KeyboardAwareShortcutButtonTests",
+      dependencies: ["KeyboardAwareShortcutButton"]),
+  ]
+)
+
+--- FILE: README.md ---
+
+### 2. README.md                                                   
+                                                                              
+  I've updated the documentation to reflect the new, more powerful            
+  shortcutDisplayMode  parameter.                                             
+                                                                              
+  ### Button with Explicit Shortcut (and Custom Display Mode)                 
+                                                                              
+  You can control exactly when the shortcut hint is visible.                  
+                                                                              
+  ```swift                                                                    
+  struct ContentView: View {                                                  
+      var body: some View {                                                   
+          VStack(spacing: 20) {                                               
+              // Default behavior: hint appears when keyboard is connected    
+              KeyboardAwareShortcutButton("Save", initialKey: "s") {          
+  print("Save!") }                                                            
+                                                                              
+              // Never show the hint, but ⌘S still works                      
+              KeyboardAwareShortcutButton(                                    
+                  "Save (Hint Hidden)",                                       
+                  initialKey: "s",                                            
+                  shortcutDisplayMode: .never                                 
+              ) {                                                             
+                  print("Save!")                                              
+              }                                                               
+                                                                              
+              // Always show the hint, useful for documentation or demos      
+              KeyboardAwareShortcutButton(                                    
+                  "Save (Hint Always Visible)",                               
+                  initialKey: "s",                                            
+                  shortcutDisplayMode: .always                                
+              ) {                                                             
+                  print("Save!")                                              
+              }                                                               
+          }                                                                   
+          .padding()                                                          
+      }                                                                       
+  }                                                                           
+                                                                              
+  ## Key Parameters                                                           
+                                                                              
+  The  KeyboardAwareShortcutButton  has several initializers. The most        
+  flexible one includes:                                                      
+                                                                              
+  •  initialKey: KeyEquivalent? : The key for the shortcut (e.g.,             
+  Character("s") ,  .return ,  .space ).                                      
+  •  initialModifiers: EventModifiers : Modifiers for the shortcut (e.g.,  .  
+  command ,  [.shift, .option] ).                                             
+  •  shortcutDisplayMode: ShortcutDisplayMode : Controls the visibility of the
+  shortcut hint.                                                              
+    •  .automatic  (default): Shows the hint only when an external keyboard is
+    connected.                                                                
+    •  .always : Always shows the hint.                                       
+    •  .never : Never shows the hint, though the shortcut remains active.     
+  •  allowShortcutAssignment: Bool : Enables runtime shortcut assignment      
+  (default  false ).                                                          
+  •  showAssignShortcutIcon: Bool : If assignment is allowed, shows an icon to
+  trigger assignment mode (default  false ).                                  
+  •  isDefaultActionEquivalent: Bool : If  true , the button also responds to 
+  the  Return  key (default  false ).                                         
+  •  layoutDirection: ShortcutButtonLayoutDirection :  .horizontal  or  .     
+  vertical  placement of the shortcut hint (default  .vertical ).             
+  •  shortcutVerticalPadding: CGFloat : Padding for vertical layout.          
+  •  customPadding: CGFloat? : Override default padding calculations.         
+  •  action: () -> Void : The closure executed when the button is tapped or   
+  shortcut is triggered.                                                      
+  •  label: () -> LabelContent : A  @ViewBuilder  for the button's content.   
+  •  accessibilityIdentifierMainButton: String? : Accessibility ID for the    
+  main button.                                                                
+  •  accessibilityIdentifierAssignButton: String? : Accessibility ID for the  
+  assign shortcut button.                                                     
+                                                                              
+  ## Components                                                
+
+
+# KeyboardAwareShortcutButton
+
+[![SwiftPM compatible](https://img.shields.io/badge/SwiftPM-compatible-brightgreen.svg)](https://swift.org/package-manager/)
+[![Platforms](https://img.shields.io/badge/Platforms-iOS%20%7C%20macOS%20%7C%20tvOS-blue.svg)](https://developer.apple.com/swift/)
+
+A SwiftUI `Button` component that intelligently displays keyboard shortcut hints only when an external keyboard is connected. It also supports optional runtime shortcut assignment and can be configured to act as a default action button (responding to the Return key).
+
+## Features
+
+*   **Keyboard Aware Shortcut Display**: Shows shortcut hints (e.g., "⌘S") only when an external keyboard is detected.
+*   **Customizable Shortcuts**: Define custom `KeyEquivalent` and `EventModifiers` for your buttons.
+*   **Automatic Shortcut Derivation**: Can automatically derive a `⌘ + FirstCharacter` shortcut from a button's title.
+*   **Runtime Shortcut Assignment**: (Optional) Allows users to assign their own keyboard shortcuts at runtime (requires iOS 17+, macOS 14+, tvOS 17+).
+*   **Default Action Button**: (Optional) Can be configured to respond to the `Return` key, similar to a default button in a dialog.
+*   **Flexible Labeling**: Use simple `String` titles or provide a custom `@ViewBuilder` for the button's label.
+*   **Layout Options**: Control the layout direction (horizontal/vertical) of the shortcut hint relative to the label.
+*   **Accessibility**: Supports accessibility identifiers for UI testing.
+*   **Lightweight**: Minimal dependencies, primarily relying on SwiftUI and `GameController` (for keyboard detection).
+
+## Requirements
+
+*   **Basic Functionality & Keyboard Detection**:
+    *   iOS 14.0+
+    *   macOS 11.0+
+    *   tvOS 14.0+
+*   **Runtime Shortcut Assignment Feature (`.onKeyPress`)**:
+    *   iOS 17.0+
+    *   macOS 14.0+
+    *   tvOS 17.0+
+*   Swift 5.7+
+
+## Installation
+
+You can add `KeyboardAwareShortcutButton` to your project using Swift Package Manager.
+
+1.  In Xcode, select **File > Add Packages...**
+2.  Enter the repository URL: `https://github.com/your_username/KeyboardAwareShortcutButton-SwiftPackage.git` (Replace with your actual GitHub repo URL)
+3.  Choose the version or branch you want to use.
+4.  Add the `KeyboardAwareShortcutButton` product to your target.
+
+## Usage
+
+Import the package in your SwiftUI file:
+
+```swift
+import SwiftUI
+import KeyboardAwareShortcutButton
+```
+
+### Basic Button with Auto-Derived Shortcut
+
+If you provide a title, the button will attempt to use `⌘ + FirstCharacter` as its shortcut.
+
+```swift
+struct ContentView: View {
+    var body: some View {
+        VStack {
+            KeyboardAwareShortcutButton("Save") {
+                print("Save action triggered!")
+            }
+            // Default shortcut: ⌘S (if an external keyboard is connected)
+        }
+        .padding()
+    }
+}
+```
+
+### Button with Explicit Shortcut
+
+```swift
+struct ContentView: View {
+    var body: some View {
+        VStack {
+            KeyboardAwareShortcutButton(
+                initialKey: .s,
+                initialModifiers: [.command, .shift],
+                title: "Save All"
+            ) {
+                print("Save All action triggered!")
+            }
+            // Shortcut: ⇧⌘S (if an external keyboard is connected)
+        }
+        .padding()
+    }
+}
+```
+
+### Default Action Button
+
+This button will respond to the `Return` key. You can optionally provide a `primaryKey` for an additional shortcut.
+
+```swift
+struct ContentView: View {
+    var body: some View {
+        VStack {
+            KeyboardAwareShortcutButton(
+                defaultActionWithTitle: "Submit",
+                primaryKey: "s", // Optional: also triggers with ⌘S
+                primaryModifiers: .command
+            ) {
+                print("Submit action triggered!")
+            }
+            // Responds to Return key, and also ⌘S in this example
+        }
+        .padding()
+    }
+}
+```
+
+### Button with Shortcut Assignment Enabled
+
+Users can click an icon to enter "assignment mode" and press their desired key combination.
+**Note:** Shortcut assignment requires iOS 17+, macOS 14+, or tvOS 17+.
+
+```swift
+struct ContentView: View {
+    var body: some View {
+        VStack {
+            KeyboardAwareShortcutButton(
+                initialKey: "p",
+                initialModifiers: .option,
+                allowShortcutAssignment: true, // Enable assignment
+                showAssignShortcutIcon: true,  // Show the keyboard icon
+                title: "Preferences"
+            ) {
+                print("Preferences action triggered!")
+            }
+            // Initial shortcut: ⌥P, user can reassign
+        }
+        .padding()
+    }
+}
+```
+
+### Custom Label Content
+
+```swift
+struct ContentView: View {
+    var body: some View {
+        VStack {
+            KeyboardAwareShortcutButton(
+                initialKey: "o",
+                initialModifiers: .command,
+                action: { print("Open action!") }
+            ) {
+                HStack {
+                    Image(systemName: "doc.badge.plus")
+                    Text("Open File")
+                }
+            }
+        }
+        .padding()
+    }
+}
+```
+
+## Key Parameters
+
+The `KeyboardAwareShortcutButton` has several initializers. The most flexible one includes:
+
+*   `initialKey: KeyEquivalent?`: The key for the shortcut (e.g., `Character("s")`, `.return`, `.space`).
+*   `initialModifiers: EventModifiers`: Modifiers for the shortcut (e.g., `.command`, `[.shift, .option]`).
+*   `displayShortcutOverlay: Bool`: Whether to show the shortcut hint (default `true`).
+*   `allowShortcutAssignment: Bool`: Enables runtime shortcut assignment (default `false`).
+*   `showAssignShortcutIcon: Bool`: If assignment is allowed, shows an icon to trigger assignment mode (default `false`).
+*   `isDefaultActionEquivalent: Bool`: If `true`, the button also responds to the `Return` key (default `false`).
+*   `layoutDirection: ShortcutButtonLayoutDirection`: `.horizontal` or `.vertical` placement of the shortcut hint (default `.vertical`).
+*   `shortcutVerticalPadding: CGFloat`: Padding for vertical layout.
+*   `customPadding: CGFloat?`: Override default padding calculations.
+*   `action: () -> Void`: The closure executed when the button is tapped or shortcut is triggered.
+*   `label: () -> LabelContent`: A `@ViewBuilder` for the button's content.
+*   `accessibilityIdentifierMainButton: String?`: Accessibility ID for the main button.
+*   `accessibilityIdentifierAssignButton: String?`: Accessibility ID for the assign shortcut button.
+
+## Components
+
+*   **`KeyboardAwareShortcutButton`**: The main SwiftUI `View` you'll use.
+*   **`ExternalKeyboardMonitor`**: An `ObservableObject` class that detects the connection status of an external hardware keyboard. This is used internally by `KeyboardAwareShortcutButton` but can also be used independently if needed.
+
+    ```swift
+    @StateObject private var keyboardMonitor = ExternalKeyboardMonitor()
+
+    var body: some View {
+        if keyboardMonitor.isExternalKeyboardConnected {
+            Text("An external keyboard is connected.")
+        } else {
+            Text("No external keyboard detected.")
+        }
+    }
+    ```
+
+## How Keyboard Detection Works
+
+The `ExternalKeyboardMonitor` uses the `GameController` framework (`GCKeyboard.coalesced != nil`) to check for the presence of a connected hardware keyboard. It listens to `.GCKeyboardDidConnect` and `.GCKeyboardDidDisconnect` notifications to update its status. On platforms or OS versions where `GameController` is unavailable for this purpose, it defaults to reporting no external keyboard connected.
+
+## Contributing
+
+Contributions, issues, and feature requests are welcome! Please feel free to open an issue or submit a pull request.
+
+## License
+
+This package is available under the MIT license. See the LICENSE file for more info. (You'll need to add a LICENSE file to your repo, typically MIT).
+
+--- FILE: Sources/KeyboardAwareShortcutButton/ExternalKeyboardMonitor.swift ---
+import SwiftUI
+import Combine
+
+#if canImport(GameController)
+import GameController
+#endif
+
+/// Publishes the connection state of a hardware keyboard.
+/// Supported on iOS 14+, macOS 11+, tvOS 14+.
+@MainActor
+public final class ExternalKeyboardMonitor: ObservableObject {
+  
+  @Published public private(set) var isExternalKeyboardConnected = false
+  
+  public init() {
+    // Defer the initial status update to ensure 'self' is fully initialized
+    // and the call happens cleanly within the main actor context.
+    Task { @MainActor [weak self] in
+      self?.updateExternalKeyboardStatus()
+    }
+    observeKeyboardConnections()
+  }
+  
+  deinit {
+    if let o = keyboardConnectObserver { NotificationCenter.default.removeObserver(o) }
+    if let o = keyboardDisconnectObserver { NotificationCenter.default.removeObserver(o) }
+  }
+  
+  private var keyboardConnectObserver: Any?
+  private var keyboardDisconnectObserver: Any?
+  
+  private func updateExternalKeyboardStatus() {
+    let newValue: Bool
+    
+    // On the simulator, the Mac's keyboard is always considered a hardware keyboard.
+    // GCKeyboard.coalesced will always be non-nil unless you manually disconnect it
+    // from the Simulator's "Hardware" menu. For many testing purposes, it's easier
+    // to treat the simulator as if no keyboard is attached by default.
+#if targetEnvironment(simulator)
+    // Use the actual value on the simulator to respect the "Connect Hardware Keyboard" menu setting.
+    // If you wanted to ALWAYS force it to false on the sim, you would just do: `newValue = false`
+    if #available(iOS 14.0, macOS 11.0, tvOS 14.0, *) {
+      newValue = (GCKeyboard.coalesced != nil)
+    } else {
+      newValue = false
+    }
+#else
+    // On a physical device, this correctly reflects the connection status.
+    if #available(iOS 14.0, macOS 11.0, tvOS 14.0, *) {
+      newValue = (GCKeyboard.coalesced != nil)
+    } else {
+      newValue = false
+    }
+#endif
+    
+    // Only publish a change if the value has actually changed.
+    if isExternalKeyboardConnected != newValue {
+      isExternalKeyboardConnected = newValue
+#if DEBUG
+      // let environment =
+#if targetEnvironment(simulator)
+       let environment = "Simulator";
+#else
+       let environment = "Device";
+#endif
+      print("🔑 ExternalKeyboardMonitor: Status changed on \(environment) → \(isExternalKeyboardConnected)")
+#endif
+    }
+  }
+  
+  private func observeKeyboardConnections() {
+#if canImport(GameController)
+    if #available(iOS 14.0, macOS 11.0, tvOS 14.0, *) {
+      keyboardConnectObserver = NotificationCenter.default.addObserver(
+        forName: .GCKeyboardDidConnect, object: nil, queue: .main
+      ) { [weak self] _ in
+        // No need for an extra Task block here, as we specified .main queue.
+        self?.updateExternalKeyboardStatus()
+      }
+      
+      keyboardDisconnectObserver = NotificationCenter.default.addObserver(
+        forName: .GCKeyboardDidDisconnect, object: nil, queue: .main
+      ) { [weak self] _ in
+        // No need for an extra Task block here, as we specified .main queue.
+        self?.updateExternalKeyboardStatus()
+      }
+    }
+#endif
+  }
+}
+
+--- FILE: Sources/KeyboardAwareShortcutButton/Helpers.swift ---
+import SwiftUI
+
+// MARK: - KeyEquivalent Extensions (Internal)
+
+extension KeyEquivalent {
+  var isArrowKey: Bool {
+    let c = self.character
+    return c == KeyEquivalent.upArrow.character ||
+    c == KeyEquivalent.downArrow.character ||
+    c == KeyEquivalent.leftArrow.character ||
+    c == KeyEquivalent.rightArrow.character
+  }
+  
+  var isFunctionKey: Bool {
+    // Note: KeyEquivalent.f1, .f2 etc. were added in iOS 15/macOS 12.
+    // If you add specific checks, compare characters: self.character == KeyEquivalent.f1.character
+    return false // Placeholder as original F-key cases were commented out
+  }
+}
+
+// MARK: - View Modifier (Internal or Public if you want to expose it)
+
+extension View {
+  /// Conditionally applies a transform to a view.
+  /// - Parameters:
+  ///   - condition: The condition to evaluate.
+  ///   - transform: The transform to apply to the source `View`.
+  /// - Returns: Either the original `View` or the modified `View` if the condition is `true`.
+  @ViewBuilder func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+    if condition {
+      transform(self)
+    } else {
+      self
+    }
+  }
+}
+
+--- FILE: Sources/KeyboardAwareShortcutButton/KeyboardAwareShortcutButton.swift ---
+import SwiftUI
+
+public enum ShortcutDisplayMode {
+  /// Show the shortcut hint only when an external keyboard is connected. This is the default.
+  case automatic
+  /// Always show the shortcut hint, regardless of keyboard connection.
+  case always
+  /// Never show the shortcut hint. The shortcut will still be active.
+  case never
+}
+
+public enum ShortcutButtonLayoutDirection {
+  case horizontal
+  case vertical
+}
+
+public struct KeyboardAwareShortcutButton<LabelContent: View>: View {
+  
+  let action: () -> Void
+  let label: () -> LabelContent
+  
+  let layoutDirection: ShortcutButtonLayoutDirection
+  let shortcutVerticalPadding: CGFloat
+  
+  let accessibilityIdentifierMainButton: String?
+  let accessibilityIdentifierAssignButton: String?
+  
+  @State private var currentShortcutKey: KeyEquivalent?
+  @State private var currentShortcutModifiers: EventModifiers
+  let shortcutDisplayMode: ShortcutDisplayMode
+  
+  let allowShortcutAssignment: Bool
+  let showAssignShortcutIcon: Bool
+  let isDefaultActionEquivalent: Bool // NEW: To make it also respond to Return key
+  
+  @State private var isAssigningShortcut: Bool = false
+  
+  private let estimatedCaptionLineHeight: CGFloat = 16
+  private let estimatedHorizontalShortcutTextWidth: CGFloat = 75
+  
+  let customPadding: CGFloat?
+  
+  @StateObject private var externalKeyboardMonitor = ExternalKeyboardMonitor()
+  
+  // MARK: - Initializers
+  
+  /// Initializes a shortcut button that ALSO acts as a default action (responds to Return key),
+  /// in addition to its primary defined shortcut.
+  ///
+  /// - Parameters:
+  ///   - defaultActionWithTitle: The text title for the button.
+  ///   - primaryKey: The primary `KeyEquivalent` for the button (e.g., first letter of title).
+  ///                 If nil, only the Return key will be its shortcut.
+  ///   - primaryModifiers: The `EventModifiers` for the primary shortcut. Default is `.command` if primaryKey is not nil.
+  ///   - shortcutDisplayMode: When to display the shortcut hint. Default is `.automatic`.
+  ///   - layoutDirection: The layout direction for label and shortcut hint. Default is `.vertical`.
+  ///   - shortcutVerticalPadding: Padding for vertical layout. Default is `4`.
+  ///   - customPadding: Custom padding to override calculated amounts.
+  ///   - accessibilityIdentifierMainButton: Accessibility ID for the main button.
+  ///   - action: The action to perform.
+  public init(
+    defaultActionWithTitle title: String,
+    primaryKey: KeyEquivalent? = nil, // User can explicitly provide a primary key
+    primaryModifiers: EventModifiers? = nil, // User can explicitly provide primary modifiers
+    shortcutDisplayMode: ShortcutDisplayMode = .automatic,
+    layoutDirection: ShortcutButtonLayoutDirection = .vertical,
+    shortcutVerticalPadding: CGFloat = 4,
+    customPadding: CGFloat? = nil,
+    accessibilityIdentifierMainButton: String? = nil,
+    action: @escaping () -> Void
+  ) where LabelContent == Text {
+    // Determine primary key and modifiers
+    let actualPrimaryKey: KeyEquivalent?
+    let actualPrimaryModifiers: EventModifiers
+    
+    if let pk = primaryKey {
+      actualPrimaryKey = pk
+      actualPrimaryModifiers = primaryModifiers ?? [] // If key provided, modifiers can be empty
+    } else if let firstChar = title.first?.lowercased() {
+      actualPrimaryKey = KeyEquivalent(Character(firstChar))
+      actualPrimaryModifiers = primaryModifiers ?? .command // Default to command if auto-deriving from title
+    } else {
+      actualPrimaryKey = nil // No title, no primary key specified
+      actualPrimaryModifiers = primaryModifiers ?? []
+    }
+    
+    self.init(
+      initialKey: actualPrimaryKey,
+      initialModifiers: actualPrimaryModifiers,
+      shortcutDisplayMode: shortcutDisplayMode,
+      allowShortcutAssignment: false, // Default actions typically not reassignable
+      showAssignShortcutIcon: false,
+      isDefaultActionEquivalent: true, // Key change: THIS makes it respond to Return
+      layoutDirection: layoutDirection,
+      shortcutVerticalPadding: shortcutVerticalPadding,
+      customPadding: customPadding,
+      title: title,
+      action: action,
+      accessibilityIdentifierMainButton: accessibilityIdentifierMainButton,
+      accessibilityIdentifierAssignButton: nil
+    )
+  }
+  
+  
+  /// Initializes a shortcut button with a text title and automatically derives a Command + FirstLetter shortcut.
+  public init(
+    _ title: String,
+    shortcutDisplayMode: ShortcutDisplayMode = .automatic,
+    allowShortcutAssignment: Bool = false,
+    showAssignShortcutIcon: Bool = false,
+    isDefaultActionEquivalent: Bool = false, // Added isDefaultActionEquivalent
+    layoutDirection: ShortcutButtonLayoutDirection = .vertical,
+    shortcutVerticalPadding: CGFloat = 4,
+    customPadding: CGFloat? = nil,
+    accessibilityIdentifierMainButton: String? = nil,
+    action: @escaping () -> Void
+  ) where LabelContent == Text {
+    let firstCharKey: KeyEquivalent? = title.first.map { KeyEquivalent(Character($0.lowercased())) }
+    
+    self.init(
+      initialKey: firstCharKey,
+      initialModifiers: .command,
+      shortcutDisplayMode: shortcutDisplayMode,
+      allowShortcutAssignment: allowShortcutAssignment,
+      showAssignShortcutIcon: showAssignShortcutIcon,
+      isDefaultActionEquivalent: isDefaultActionEquivalent, // Pass through
+      layoutDirection: layoutDirection,
+      shortcutVerticalPadding: shortcutVerticalPadding,
+      customPadding: customPadding,
+      title: title,
+      action: action,
+      accessibilityIdentifierMainButton: accessibilityIdentifierMainButton,
+      accessibilityIdentifierAssignButton: nil
+    )
+  }
+  
+  
+  /// Initializes a shortcut button with a text title and explicit shortcut parameters.
+  public init(
+    initialKey: KeyEquivalent? = nil,
+    initialModifiers: EventModifiers = .command,
+    shortcutDisplayMode: ShortcutDisplayMode = .automatic,
+    allowShortcutAssignment: Bool = false,
+    showAssignShortcutIcon: Bool = false,
+    isDefaultActionEquivalent: Bool = false, // Added isDefaultActionEquivalent
+    layoutDirection: ShortcutButtonLayoutDirection = .vertical,
+    shortcutVerticalPadding: CGFloat = 4,
+    customPadding: CGFloat? = nil,
+    title: String,
+    action: @escaping () -> Void,
+    accessibilityIdentifierMainButton: String? = nil,
+    accessibilityIdentifierAssignButton: String? = nil
+  ) where LabelContent == Text {
+    self.init(
+      initialKey: initialKey,
+      initialModifiers: initialModifiers,
+      shortcutDisplayMode: shortcutDisplayMode,
+      allowShortcutAssignment: allowShortcutAssignment,
+      showAssignShortcutIcon: showAssignShortcutIcon,
+      isDefaultActionEquivalent: isDefaultActionEquivalent, // Pass through
+      layoutDirection: layoutDirection,
+      shortcutVerticalPadding: shortcutVerticalPadding,
+      customPadding: customPadding,
+      action: action,
+      accessibilityIdentifierMainButton: accessibilityIdentifierMainButton,
+      accessibilityIdentifierAssignButton: accessibilityIdentifierAssignButton,
+      label: { Text(title) }
+    )
+  }
+  
+  /// Initializes a shortcut button with custom label content and explicit shortcut parameters (most flexible).
+  public init(
+    initialKey: KeyEquivalent? = nil,
+    initialModifiers: EventModifiers = .command,
+    shortcutDisplayMode: ShortcutDisplayMode = .automatic,
+    allowShortcutAssignment: Bool = false,
+    showAssignShortcutIcon: Bool = false,
+    isDefaultActionEquivalent: Bool = false, // NEW: Parameter to make it also default
+    layoutDirection: ShortcutButtonLayoutDirection = .vertical,
+    shortcutVerticalPadding: CGFloat = 4,
+    customPadding: CGFloat? = nil,
+    action: @escaping () -> Void,
+    accessibilityIdentifierMainButton: String? = nil,
+    accessibilityIdentifierAssignButton: String? = nil,
+    @ViewBuilder label: @escaping () -> LabelContent
+  ) {
+    self.action = action
+    self.label = label
+    self._currentShortcutKey = State(initialValue: initialKey)
+    self._currentShortcutModifiers = State(initialValue: initialModifiers)
+    self.shortcutDisplayMode = shortcutDisplayMode
+    self.allowShortcutAssignment = allowShortcutAssignment
+    self.showAssignShortcutIcon = showAssignShortcutIcon
+    self.isDefaultActionEquivalent = isDefaultActionEquivalent // Store it
+    self.layoutDirection = layoutDirection
+    self.shortcutVerticalPadding = shortcutVerticalPadding
+    self.customPadding = customPadding
+    self.accessibilityIdentifierMainButton = accessibilityIdentifierMainButton
+    self.accessibilityIdentifierAssignButton = accessibilityIdentifierAssignButton
+  }
+  
+  func keyEquivalentDisplayString(for key: KeyEquivalent) -> String {
+    let char_fb = key.character
+    if char_fb == KeyEquivalent.space.character { return "Space" }
+    if char_fb == KeyEquivalent.return.character { return "↩" }
+    if char_fb == KeyEquivalent.tab.character { return "⇥" }
+    if char_fb == KeyEquivalent.escape.character { return "⎋" }
+    if char_fb == KeyEquivalent.delete.character { return "⌫" }
+    if char_fb == KeyEquivalent.deleteForward.character { return "⌦" }
+    if char_fb == KeyEquivalent.upArrow.character { return "↑" }
+    if char_fb == KeyEquivalent.downArrow.character { return "↓" }
+    if char_fb == KeyEquivalent.leftArrow.character { return "←" }
+    if char_fb == KeyEquivalent.rightArrow.character { return "→" }
+    if char_fb == KeyEquivalent.home.character { return "↖" }
+    if char_fb == KeyEquivalent.end.character { return "↘" }
+    if char_fb == KeyEquivalent.pageUp.character { return "⇞" }
+    if char_fb == KeyEquivalent.pageDown.character { return "⇟" } // Typo fixed: return "⇟"
+    if char_fb == KeyEquivalent.clear.character { return "Clear" }
+    else {
+      if char_fb.unicodeScalars.first?.properties.generalCategory == .control { return "?" }
+      if char_fb.isLetter { return String(char_fb).uppercased() }
+      if char_fb.isNumber || char_fb.isSymbol || char_fb.isPunctuation { return String(char_fb) }
+      if char_fb.isASCII && !char_fb.isWhitespace { return String(char_fb).uppercased() }
+      if String(char_fb).isEmpty { return "?" }
+      if char_fb.isWhitespace && char_fb != " " { return "?" }
+      return String(char_fb)
+    }
+  }
+  
+  private func modifiersDisplayString(for modifiers: EventModifiers) -> String {
+    var displayString = ""
+    if modifiers.contains(.control) { displayString += "⌃" }
+    if modifiers.contains(.option) { displayString += "⌥" }
+    if modifiers.contains(.shift) { displayString += "⇧" }
+    if modifiers.contains(.command) { displayString += "⌘" }
+    return displayString
+  }
+  
+  private var shortcutDisplayString: String? {
+    guard let key = currentShortcutKey else { return nil }
+    // Don't show "↩" if it's the primary key for a default action button and the hint display mode is .never
+    if isDefaultActionEquivalent && key.character == KeyEquivalent.return.character && shortcutDisplayMode == .never {
+        return nil
+    }
+    let modString = modifiersDisplayString(for: currentShortcutModifiers)
+    return "\(modString)\(keyEquivalentDisplayString(for: key))"
+  }
+  
+  private func shouldShowShortcutTextInfo() -> Bool {
+    // Determine if there is any text content to display.
+    let showAssignText = allowShortcutAssignment && isAssigningShortcut
+    let hasContentToShow = showAssignText || shortcutDisplayString != nil || currentShortcutKey == nil
+    
+    guard hasContentToShow else { return false }
+    
+    // Apply the display mode logic.
+    switch shortcutDisplayMode {
+    case .never:
+      return false
+    case .always:
+      return true
+    case .automatic:
+      // In assignment mode, always show the "Press new shortcut..." text if a keyboard is connected.
+      if isAssigningShortcut { return externalKeyboardMonitor.isExternalKeyboardConnected }
+      
+      // For regular display, show if keyboard is connected and there's a shortcut to display.
+      return externalKeyboardMonitor.isExternalKeyboardConnected && (shortcutDisplayString != nil || currentShortcutKey == nil)
+    }
+  }
+  
+  @ViewBuilder
+  private var shortcutTextInfoViewForOverlay: some View {
+    if allowShortcutAssignment && isAssigningShortcut {
+      Text("Press new shortcut...")
+        .font(.caption)
+        .foregroundColor(.accentColor)
+    } else if let shortcutStr = shortcutDisplayString {
+      Text(shortcutStr)
+        .font(.caption)
+        .foregroundColor(.secondary)
+    } else if currentShortcutKey == nil { // Show "(No shortcut)" if no key is assigned
+      // And also avoid showing "(No shortcut)" for a default action button
+      // that doesn't have a separate primary key.
+      if !(isDefaultActionEquivalent && (currentShortcutKey == nil || currentShortcutKey?.character == KeyEquivalent.return.character)) {
+        Text("(No shortcut)")
+          .font(.caption)
+          .foregroundColor(.secondary)
+      }
+    }
+  }
+  
+  @ViewBuilder
+  private var labelWithOverlaidShortcut: some View {
+    // ... (same as before)
+    let baseLabel = label()
+    let showInfo = shouldShowShortcutTextInfo()
+    
+    let paddingEdge: Edge.Set = layoutDirection == .vertical ? .bottom : .trailing
+    let paddingAmount: CGFloat = if showInfo {
+      layoutDirection == .vertical ? (estimatedCaptionLineHeight + shortcutVerticalPadding) : (estimatedHorizontalShortcutTextWidth + 8)
+    } else {
+      0
+    }
+    let overlayAlignment: Alignment = layoutDirection == .vertical ? .bottom : .trailing
+    
+    baseLabel
+      .overlay(alignment: overlayAlignment) {
+        if showInfo {
+          if layoutDirection == .vertical {
+            shortcutTextInfoViewForOverlay
+              .padding(paddingEdge, customPadding ?? paddingAmount)
+          } else {
+            shortcutTextInfoViewForOverlay
+              .padding(.trailing, customPadding ?? 8)
+          }
+        }
+      }
+  }
+  
+  @ViewBuilder
+  private var assignShortcutButtonView: some View {
+    // ... (same as before)
+    if allowShortcutAssignment {
+      Button {
+        isAssigningShortcut.toggle()
+      } label: {
+        Image(systemName: isAssigningShortcut ? "keyboard.fill" : "keyboard")
+      }
+      .buttonStyle(PlainButtonStyle())
+      .accessibilityLabel(isAssigningShortcut ? "Cancel shortcut assignment" : "Assign shortcut")
+      .accessibilityIdentifier(accessibilityIdentifierAssignButton ?? "KeyboardAwareShortcutButton.assignButton")
+    }
+  }
+  
+  public var body: some View {
+    let buttonContent = HStack(alignment: .center, spacing: 4) {
+      labelWithOverlaidShortcut
+    }
+    
+    // Main button with its primary shortcut
+    let actualButton = Button(action: {
+      if allowShortcutAssignment && isAssigningShortcut {
+        isAssigningShortcut = false
+      } else {
+        action()
+      }
+    }) {
+      buttonContent
+    }
+      .accessibilityIdentifier(accessibilityIdentifierMainButton ?? "KeyboardAwareShortcutButton.mainButton")
+    
+    let mainButtonWithPrimaryShortcut = Group {
+      if let sk = currentShortcutKey {
+        // Avoid applying .keyboardShortcut for .return if it's handled by isDefaultActionEquivalent
+        if !(isDefaultActionEquivalent && sk.character == KeyEquivalent.return.character) {
+          actualButton.keyboardShortcut(sk, modifiers: currentShortcutModifiers)
+        } else {
+          actualButton // Primary is .return, handled by the default action mechanism
+        }
+      } else {
+        actualButton // No primary shortcut key
+      }
+    }
+    
+    // Container for the main button and the (optional) assign icon
+    let buttonAndAssignIcon = HStack(spacing: 8) {
+      mainButtonWithPrimaryShortcut
+      
+      if #available(iOS 17.0, macOS 14.0, tvOS 17.0, watchOS 10.0, *) {
+        if allowShortcutAssignment && showAssignShortcutIcon && shortcutDisplayMode != .never && externalKeyboardMonitor.isExternalKeyboardConnected {
+          assignShortcutButtonView
+        }
+      }
+    }
+    
+    // Apply the .onKeyPress for assignment IF enabled
+    let viewWithAssignmentHandling = buttonAndAssignIcon
+      .if(allowShortcutAssignment && isAssigningShortcut) { view_in_transform in
+        Group {
+          if #available(iOS 17.0, macOS 14.0, tvOS 17.0, watchOS 10.0, *) {
+            view_in_transform.onKeyPress(phases: .down) { press in
+              let keyChar = press.key.character
+              let isCharOrNumber = keyChar.isLetter || keyChar.isNumber
+              
+              let isAllowedSingleKey = keyChar == KeyEquivalent.space.character ||
+              keyChar == KeyEquivalent.return.character ||
+              keyChar == KeyEquivalent.escape.character ||
+              keyChar == KeyEquivalent.tab.character ||
+              press.key.isArrowKey ||
+              press.key.isFunctionKey
+              
+              if press.modifiers.isEmpty && isCharOrNumber && !isAllowedSingleKey {
+#if DEBUG
+                print("⚠️ Shortcut Assignment: Plain character '\(keyChar)' without modifiers is not recommended. Shortcut not assigned.")
+#endif
+                self.isAssigningShortcut = false
+                return .handled
+              }
+              
+              self.currentShortcutKey = press.key
+              self.currentShortcutModifiers = press.modifiers
+              self.isAssigningShortcut = false
+              
+#if DEBUG
+              if let newKey = self.currentShortcutKey {
+                print("✅ Shortcut Assigned: \(self.modifiersDisplayString(for: self.currentShortcutModifiers))\(self.keyEquivalentDisplayString(for: newKey))")
+              }
+#endif
+              return .handled
+            }
+          } else {
+            view_in_transform
+          }
+        }
+      }
+    
+    // Apply the .keyboardShortcut for the default action (Return key) IF isDefaultActionEquivalent is true
+    // This is separate so it doesn't interfere with the primary shortcut display or assignment.
+    return viewWithAssignmentHandling.if(isDefaultActionEquivalent) { view in
+        view.keyboardShortcut(.return, modifiers: [])
+      }
+  }
+}
+
+--- FILE: Tests/KeyboardAwareShortcutButtonTests/ExternalKeyboardMonitorTests.swift ---
+import XCTest
+@testable import KeyboardAwareShortcutButton
+import Combine // For AnyCancellable
+
+@MainActor // Ensures tests involving MainActor types run on the main actor
+class ExternalKeyboardMonitorTests: XCTestCase {
+
+    var monitor: ExternalKeyboardMonitor!
+    var cancellables: Set<AnyCancellable>!
+
+    override func setUp() {
+        super.setUp()
+        // This runs on the main thread due to @MainActor
+        monitor = ExternalKeyboardMonitor()
+        cancellables = []
+    }
+
+    override func tearDown() {
+        monitor = nil
+        cancellables = nil
+        super.tearDown()
+    }
+
+    func testInitialIsExternalKeyboardConnected_IsFalse() {
+        // The initial status update is deferred via Task.
+        // We expect it to be false before that Task completes.
+        // And generally, without GameController actually reporting a keyboard.
+        XCTAssertFalse(monitor.isExternalKeyboardConnected, "Initially, keyboard should be reported as not connected.")
+    }
+    
+    func testIsExternalKeyboardConnected_AfterShortDelay_RemainsFalseWithoutGameController() async throws {
+        // Create an expectation
+        let expectation = XCTestExpectation(description: "Monitor updates isExternalKeyboardConnected")
+
+        // Subscribe to changes
+        var receivedValue: Bool?
+        monitor.$isExternalKeyboardConnected
+            .dropFirst() // Often we want to ignore the initial value for this kind of test
+            .sink { value in
+                receivedValue = value
+                // We don't necessarily expect a change here in a unit test environment
+                // without actual GameController events.
+                // This sink is more for observing if anything unexpected happens.
+            }
+            .store(in: &cancellables)
+
+        // The Task in init might not have run yet.
+        // Let it run for a very short period.
+        // This is a bit of a smell for unit tests (relying on time),
+        // but inherent with the Task in init.
+        try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+
+        // In a test environment without a real GameController and keyboard,
+        // GCKeyboard.coalesced will be nil.
+        XCTAssertFalse(monitor.isExternalKeyboardConnected, "After init Task, should still be false without GameController input.")
+        
+        // Fulfill if we just want to ensure the test runs through
+        expectation.fulfill() // Fulfill to not wait indefinitely if no change is expected.
+        
+        // We don't necessarily `wait(for: [expectation], timeout: 0.2)` if no change is expected.
+        // The purpose of the sink was more to catch an unexpected true.
+        // If the Task in init was guaranteed to publish, we'd use the expectation more directly.
+    }
+
+    // Note: Testing the actual change due to GCKeyboardDidConnect/Disconnect notifications
+    // is very difficult in a pure unit test without:
+    // 1. A way to mock GCKeyboard.coalesced.
+    // 2. A way to reliably post and observe these specific system notifications within the test.
+    // This typically leans towards integration or UI testing.
+    // For unit tests, we've tested the initial state and the fact it doesn't
+    // spontaneously turn true without external factors.
+}
+
+--- FILE: Tests/KeyboardAwareShortcutButtonTests/FormattingTests.swift ---
+import XCTest
+@testable import KeyboardAwareShortcutButton // Allows access to internal members
+import SwiftUI // For KeyEquivalent, EventModifiers
+
+class FormattingTests: XCTestCase {
+  
+  // Helper to create a button instance for testing its internal methods
+  private func makeSUT(
+    initialKey: KeyEquivalent? = nil,
+    initialModifiers: EventModifiers = .command,
+    title: String = "Test"
+  ) -> KeyboardAwareShortcutButton<Text> {
+    return KeyboardAwareShortcutButton(
+      initialKey: initialKey,
+      initialModifiers: initialModifiers,
+      title: title,
+      action: {}
+    )
+  }
+  
+  // MARK: - keyEquivalentDisplayString Tests
+  
+  func testKeyEquivalentDisplayString_CommonKeys() {
+    let sut = makeSUT()
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: .space), "Space", "Space key")
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: .return), "↩", "Return key")
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: .tab), "⇥", "Tab key")
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: .escape), "⎋", "Escape key")
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: .delete), "⌫", "Delete key")
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: .deleteForward), "⌦", "Delete Forward key")
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: .upArrow), "↑", "Up Arrow key")
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: .downArrow), "↓", "Down Arrow key")
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: .leftArrow), "←", "Left Arrow key")
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: .rightArrow), "→", "Right Arrow key")
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: .home), "↖", "Home key")
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: .end), "↘", "End key")
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: .pageUp), "⇞", "Page Up key")
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: .pageDown), "⇟", "Page Down key")
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: .clear), "Clear", "Clear key")
+  }
+  
+  func testKeyEquivalentDisplayString_Letters() {
+    let sut = makeSUT()
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: KeyEquivalent("a")), "A")
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: KeyEquivalent("Z")), "Z")
+  }
+  
+  func testKeyEquivalentDisplayString_Numbers() {
+    let sut = makeSUT()
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: KeyEquivalent("1")), "1")
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: KeyEquivalent("0")), "0")
+  }
+  
+  func testKeyEquivalentDisplayString_Symbols() {
+    let sut = makeSUT()
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: KeyEquivalent(",")), ",")
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: KeyEquivalent(".")), ".")
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: KeyEquivalent("-")), "-")
+    XCTAssertEqual(sut.keyEquivalentDisplayString(for: KeyEquivalent("=")), "=")
+  }
+  
+  func testKeyEquivalentDisplayString_ControlCharactersReturnQuestionMark() {
+    let sut = makeSUT()
+    // Example of a control character (Null character)
+    // KeyEquivalent character for control characters might not be straightforward.
+    // This test assumes that if a KeyEquivalent represents a non-printable control character,
+    // it should fall into the generalCategory == .controlCharacter check.
+    // Note: Creating KeyEquivalent for arbitrary control characters might be tricky.
+    // Let's test with a known non-printable ASCII, like Bell (BEL, ASCII 7)
+    // if Character(UnicodeScalar(7)) can be made into a KeyEquivalent.
+    // For now, let's rely on how the code handles an empty string if that can occur.
+    // However, `KeyEquivalent.character` usually returns something.
+    
+    // A more direct test for control character logic would be needed if KeyEquivalent
+    // can directly represent them from keyboard input that isn't special like .return.
+    // The current logic uses `char_fb.unicodeScalars.first?.properties.generalCategory == .controlCharacter`
+    // Let's assume a hypothetical scenario or a character known to be a control character.
+    // For instance, if a KeyEquivalent could represent a null character directly.
+    // This part is harder to test without knowing exactly how KeyEquivalent handles all control chars.
+    // However, if `String(char_fb).isEmpty` occurs, it should be "?".
+    // XCTAssertEqual(sut.keyEquivalentDisplayString(for: KeyEquivalent(Character(UnicodeScalar(0)!))), "?", "Null char")
+    // For testing, a KeyEquivalent with an empty character shouldn't really happen from keyboard events.
+    // Let's focus on the path that if String(char_fb).isEmpty is true, it's "?".
+    // And if it's a known control character.
+  }
+  
+  
+  // MARK: - modifiersDisplayString Tests
+  
+  func testModifiersDisplayString_SingleModifiers() {
+    let sut = makeSUT()
+    XCTAssertEqual(sut.modifiersDisplayString(for: .control), "⌃")
+    XCTAssertEqual(sut.modifiersDisplayString(for: .option), "⌥")
+    XCTAssertEqual(sut.modifiersDisplayString(for: .shift), "⇧")
+    XCTAssertEqual(sut.modifiersDisplayString(for: .command), "⌘")
+  }
+  
+  func testModifiersDisplayString_MultipleModifiers() {
+    let sut = makeSUT()
+    // Order depends on the implementation, typically Control, Option, Shift, Command
+    XCTAssertEqual(sut.modifiersDisplayString(for: [.command, .shift]), "⇧⌘")
+    XCTAssertEqual(sut.modifiersDisplayString(for: [.option, .control]), "⌃⌥")
+    XCTAssertEqual(sut.modifiersDisplayString(for: [.command, .option, .shift, .control]), "⌃⌥⇧⌘")
+  }
+  
+  func testModifiersDisplayString_NoModifiers() {
+    let sut = makeSUT()
+    XCTAssertEqual(sut.modifiersDisplayString(for: []), "")
+  }
+  
+  // MARK: - shortcutDisplayString Tests
+  
+  func testShortcutDisplayString_WithKeyAndModifiers() {
+    let sut = makeSUT(initialKey: "s", initialModifiers: .command)
+    // This tests the private var shortcutDisplayString.
+    // We can't access it directly, but we can infer its behavior
+    // by checking how it would be used in the UI (though we aren't testing UI here).
+    // For this test, we're more focused on the string generation part which is public.
+    // To test `shortcutDisplayString` itself, we'd need it to be internal or use ViewInspector.
+    // For now, we've tested its components.
+    // If we make `shortcutDisplayString` internal:
+    // XCTAssertEqual(sut.shortcutDisplayString, "⌘S")
+  }
+  
+  func testShortcutDisplayString_WithOnlyKey() {
+    let sut = makeSUT(initialKey: "x", initialModifiers: [])
+    // If shortcutDisplayString were internal:
+    // XCTAssertEqual(sut.shortcutDisplayString, "X")
+  }
+  
+  func testShortcutDisplayString_NoKey() {
+    let sut = makeSUT(initialKey: nil)
+    // If shortcutDisplayString were internal:
+    // XCTAssertNil(sut.shortcutDisplayString)
+  }
+}
+
+--- FILE: Tests/KeyboardAwareShortcutButtonTests/KeyEquivalentExtensionTests.swift ---
+import XCTest
+@testable import KeyboardAwareShortcutButton
+import SwiftUI
+
+class KeyEquivalentExtensionTests: XCTestCase {
+  
+  func testIsArrowKey_TrueForArrowKeys() {
+    XCTAssertTrue(KeyEquivalent.upArrow.isArrowKey)
+    XCTAssertTrue(KeyEquivalent.downArrow.isArrowKey)
+    XCTAssertTrue(KeyEquivalent.leftArrow.isArrowKey)
+    XCTAssertTrue(KeyEquivalent.rightArrow.isArrowKey)
+  }
+  
+  func testIsArrowKey_FalseForNonArrowKeys() {
+    XCTAssertFalse(KeyEquivalent("a").isArrowKey)
+    XCTAssertFalse(KeyEquivalent.space.isArrowKey)
+    XCTAssertFalse(KeyEquivalent.return.isArrowKey)
+    XCTAssertFalse(KeyEquivalent("1").isArrowKey)
+  }
+  
+  func testIsFunctionKey_IsCurrentlyFalse() {
+    // This test reflects the current implementation where isFunctionKey always returns false.
+    // If KeyEquivalent gains .f1 etc. and you implement checks, update this.
+//    XCTAssertFalse(KeyEquivalent.f1.isFunctionKey, "F1 key (assuming .f1 is available)") // .f1 is iOS 15+
+    XCTAssertFalse(KeyEquivalent("f").isFunctionKey)
+    XCTAssertFalse(KeyEquivalent.escape.isFunctionKey)
+  }
+}
+
+--- FILE: Tests/KeyboardAwareShortcutButtonTests/KeyboardAwareShortcutButtonTests.swift ---
+import XCTest
+@testable import KeyboardAwareShortcutButton
+import SwiftUI
+
+final class KeyboardAwareShortcutButtonInitializationTests: XCTestCase { // Renamed class
+  
+  func testInitialization_WithTitle() {
+    let actionExecuted = XCTestExpectation(description: "Action executed")
+    actionExecuted.isInverted = true // We don't expect it to be called on init
+    
+    let sut = KeyboardAwareShortcutButton(title: "My Button", action: {
+      actionExecuted.fulfill()
+    })
+    
+    XCTAssertNotNil(sut, "Button should initialize with a title.")
+    // We can't easily inspect the Text content here without ViewInspector
+    // but we know it compiled and initialized.
+    
+    wait(for: [actionExecuted], timeout: 0.1) // Ensure action wasn't called
+  }
+  
+  func testInitialization_WithCustomLabel() {
+    let actionExecuted = XCTestExpectation(description: "Action executed")
+    actionExecuted.isInverted = true
+    
+    let sut = KeyboardAwareShortcutButton(action: {
+      actionExecuted.fulfill()
+    }, label: {
+      HStack {
+        Image(systemName: "star")
+        Text("Custom")
+      }
+    })
+    
+    XCTAssertNotNil(sut, "Button should initialize with a custom label.")
+    wait(for: [actionExecuted], timeout: 0.1)
+  }
+  
+  // Testing the actual button tap action would ideally use ViewInspector
+  // or XCUITest. For XCTest, we've just confirmed init.
+}

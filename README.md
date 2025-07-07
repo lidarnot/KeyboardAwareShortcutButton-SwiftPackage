@@ -1,4 +1,77 @@
-Okay, here's a `README.md` for your `KeyboardAwareShortcutButton` Swift package.
+
+### 2. README.md                                                   
+                                                                              
+  I've updated the documentation to reflect the new, more powerful            
+  shortcutDisplayMode  parameter.                                             
+                                                                              
+  ### Button with Explicit Shortcut (and Custom Display Mode)                 
+                                                                              
+  You can control exactly when the shortcut hint is visible.                  
+                                                                              
+  ```swift                                                                    
+  struct ContentView: View {                                                  
+      var body: some View {                                                   
+          VStack(spacing: 20) {                                               
+              // Default behavior: hint appears when keyboard is connected    
+              KeyboardAwareShortcutButton("Save", initialKey: "s") {          
+  print("Save!") }                                                            
+                                                                              
+              // Never show the hint, but ⌘S still works                      
+              KeyboardAwareShortcutButton(                                    
+                  "Save (Hint Hidden)",                                       
+                  initialKey: "s",                                            
+                  shortcutDisplayMode: .never                                 
+              ) {                                                             
+                  print("Save!")                                              
+              }                                                               
+                                                                              
+              // Always show the hint, useful for documentation or demos      
+              KeyboardAwareShortcutButton(                                    
+                  "Save (Hint Always Visible)",                               
+                  initialKey: "s",                                            
+                  shortcutDisplayMode: .always                                
+              ) {                                                             
+                  print("Save!")                                              
+              }                                                               
+          }                                                                   
+          .padding()                                                          
+      }                                                                       
+  }                                                                           
+                                                                              
+  ## Key Parameters                                                           
+                                                                              
+  The  KeyboardAwareShortcutButton  has several initializers. The most        
+  flexible one includes:                                                      
+                                                                              
+  •  initialKey: KeyEquivalent? : The key for the shortcut (e.g.,             
+  Character("s") ,  .return ,  .space ).                                      
+  •  initialModifiers: EventModifiers : Modifiers for the shortcut (e.g.,  .  
+  command ,  [.shift, .option] ).                                             
+  •  shortcutDisplayMode: ShortcutDisplayMode : Controls the visibility of the
+  shortcut hint.                                                              
+    •  .automatic  (default): Shows the hint only when an external keyboard is
+    connected.                                                                
+    •  .always : Always shows the hint.                                       
+    •  .never : Never shows the hint, though the shortcut remains active.     
+  •  allowShortcutAssignment: Bool : Enables runtime shortcut assignment      
+  (default  false ).                                                          
+  •  showAssignShortcutIcon: Bool : If assignment is allowed, shows an icon to
+  trigger assignment mode (default  false ).                                  
+  •  isDefaultActionEquivalent: Bool : If  true , the button also responds to 
+  the  Return  key (default  false ).                                         
+  •  layoutDirection: ShortcutButtonLayoutDirection :  .horizontal  or  .     
+  vertical  placement of the shortcut hint (default  .vertical ).             
+  •  shortcutVerticalPadding: CGFloat : Padding for vertical layout.          
+  •  customPadding: CGFloat? : Override default padding calculations.         
+  •  action: () -> Void : The closure executed when the button is tapped or   
+  shortcut is triggered.                                                      
+  •  label: () -> LabelContent : A  @ViewBuilder  for the button's content.   
+  •  accessibilityIdentifierMainButton: String? : Accessibility ID for the    
+  main button.                                                                
+  •  accessibilityIdentifierAssignButton: String? : Accessibility ID for the  
+  assign shortcut button.                                                     
+                                                                              
+  ## Components                                                
 
 
 # KeyboardAwareShortcutButton
