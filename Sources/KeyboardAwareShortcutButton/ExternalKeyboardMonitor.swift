@@ -1,5 +1,5 @@
-import SwiftUI // For @MainActor, @Published, ObservableObject
-import Combine // For @Published
+import SwiftUI
+import Combine
 
 #if canImport(GameController)
 import GameController
@@ -30,28 +30,40 @@ public final class ExternalKeyboardMonitor: ObservableObject {
   private var keyboardDisconnectObserver: Any?
   
   private func updateExternalKeyboardStatus() {
-    // This method is implicitly @MainActor because the class is @MainActor.
-#if canImport(GameController)
+    let newValue: Bool
+    
+    // On the simulator, the Mac's keyboard is always considered a hardware keyboard.
+    // GCKeyboard.coalesced will always be non-nil unless you manually disconnect it
+    // from the Simulator's "Hardware" menu. For many testing purposes, it's easier
+    // to treat the simulator as if no keyboard is attached by default.
+#if targetEnvironment(simulator)
+    // Use the actual value on the simulator to respect the "Connect Hardware Keyboard" menu setting.
+    // If you wanted to ALWAYS force it to false on the sim, you would just do: `newValue = false`
     if #available(iOS 14.0, macOS 11.0, tvOS 14.0, *) {
-      let previous = isExternalKeyboardConnected
-      isExternalKeyboardConnected = (GCKeyboard.coalesced != nil)
-      if previous != isExternalKeyboardConnected {
-#if DEBUG
-        // Consider using a Logger for package libraries instead of print
-        // if you want more control over debug output for consumers.
-        print("🔑 ExternalKeyboardMonitor: Status changed → \(isExternalKeyboardConnected)")
-#endif
-      }
-      return
+      newValue = (GCKeyboard.coalesced != nil)
+    } else {
+      newValue = false
+    }
+#else
+    // On a physical device, this correctly reflects the connection status.
+    if #available(iOS 14.0, macOS 11.0, tvOS 14.0, *) {
+      newValue = (GCKeyboard.coalesced != nil)
+    } else {
+      newValue = false
     }
 #endif
     
-    // Fallback for platforms / OS versions without GameController
-    let previous = isExternalKeyboardConnected
-    isExternalKeyboardConnected = false // Default to false if GameController isn't available/supported
-    if previous != isExternalKeyboardConnected {
+    // Only publish a change if the value has actually changed.
+    if isExternalKeyboardConnected != newValue {
+      isExternalKeyboardConnected = newValue
 #if DEBUG
-      print("🔑 ExternalKeyboardMonitor: Status changed (fallback) → \(isExternalKeyboardConnected)")
+      let environment =
+#if targetEnvironment(simulator)
+      "Simulator"
+#else
+      "Device"
+#endif
+      print("🔑 ExternalKeyboardMonitor: Status changed on \(environment) → \(isExternalKeyboardConnected)")
 #endif
     }
   }
@@ -62,17 +74,15 @@ public final class ExternalKeyboardMonitor: ObservableObject {
       keyboardConnectObserver = NotificationCenter.default.addObserver(
         forName: .GCKeyboardDidConnect, object: nil, queue: .main
       ) { [weak self] _ in
-        Task { @MainActor [weak self] in // Ensure main actor context for Swift 6
-          self?.updateExternalKeyboardStatus()
-        }
+        // No need for an extra Task block here, as we specified .main queue.
+        self?.updateExternalKeyboardStatus()
       }
       
       keyboardDisconnectObserver = NotificationCenter.default.addObserver(
         forName: .GCKeyboardDidDisconnect, object: nil, queue: .main
       ) { [weak self] _ in
-        Task { @MainActor [weak self] in // Ensure main actor context for Swift 6
-          self?.updateExternalKeyboardStatus()
-        }
+        // No need for an extra Task block here, as we specified .main queue.
+        self?.updateExternalKeyboardStatus()
       }
     }
 #endif
