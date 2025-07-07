@@ -57,11 +57,11 @@ public final class ExternalKeyboardMonitor: ObservableObject {
     if isExternalKeyboardConnected != newValue {
       isExternalKeyboardConnected = newValue
 #if DEBUG
-      let environment =
+      // let environment =
 #if targetEnvironment(simulator)
-      "Simulator"
+       let environment = "Simulator";
 #else
-      "Device"
+       let environment = "Device";
 #endif
       print("🔑 ExternalKeyboardMonitor: Status changed on \(environment) → \(isExternalKeyboardConnected)")
 #endif
