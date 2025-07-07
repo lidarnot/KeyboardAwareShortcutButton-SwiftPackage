@@ -1,5 +1,13 @@
-// Sources/KeyboardAwareShortcutButton/KeyboardAwareShortcutButton.swift
 import SwiftUI
+
+public enum ShortcutDisplayMode {
+  /// Show the shortcut hint only when an external keyboard is connected. This is the default.
+  case automatic
+  /// Always show the shortcut hint, regardless of keyboard connection.
+  case always
+  /// Never show the shortcut hint. The shortcut will still be active.
+  case never
+}
 
 public enum ShortcutButtonLayoutDirection {
   case horizontal
@@ -19,7 +27,7 @@ public struct KeyboardAwareShortcutButton<LabelContent: View>: View {
   
   @State private var currentShortcutKey: KeyEquivalent?
   @State private var currentShortcutModifiers: EventModifiers
-  let displayShortcutOverlay: Bool
+  let shortcutDisplayMode: ShortcutDisplayMode
   
   let allowShortcutAssignment: Bool
   let showAssignShortcutIcon: Bool
@@ -44,7 +52,7 @@ public struct KeyboardAwareShortcutButton<LabelContent: View>: View {
   ///   - primaryKey: The primary `KeyEquivalent` for the button (e.g., first letter of title).
   ///                 If nil, only the Return key will be its shortcut.
   ///   - primaryModifiers: The `EventModifiers` for the primary shortcut. Default is `.command` if primaryKey is not nil.
-  ///   - displayShortcutOverlay: Whether to display the primary shortcut hint. Default is `true`.
+  ///   - shortcutDisplayMode: When to display the shortcut hint. Default is `.automatic`.
   ///   - layoutDirection: The layout direction for label and shortcut hint. Default is `.vertical`.
   ///   - shortcutVerticalPadding: Padding for vertical layout. Default is `4`.
   ///   - customPadding: Custom padding to override calculated amounts.
@@ -54,7 +62,7 @@ public struct KeyboardAwareShortcutButton<LabelContent: View>: View {
     defaultActionWithTitle title: String,
     primaryKey: KeyEquivalent? = nil, // User can explicitly provide a primary key
     primaryModifiers: EventModifiers? = nil, // User can explicitly provide primary modifiers
-    displayShortcutOverlay: Bool = true,
+    shortcutDisplayMode: ShortcutDisplayMode = .automatic,
     layoutDirection: ShortcutButtonLayoutDirection = .vertical,
     shortcutVerticalPadding: CGFloat = 4,
     customPadding: CGFloat? = nil,
@@ -79,7 +87,7 @@ public struct KeyboardAwareShortcutButton<LabelContent: View>: View {
     self.init(
       initialKey: actualPrimaryKey,
       initialModifiers: actualPrimaryModifiers,
-      displayShortcutOverlay: displayShortcutOverlay,
+      shortcutDisplayMode: shortcutDisplayMode,
       allowShortcutAssignment: false, // Default actions typically not reassignable
       showAssignShortcutIcon: false,
       isDefaultActionEquivalent: true, // Key change: THIS makes it respond to Return
@@ -97,7 +105,7 @@ public struct KeyboardAwareShortcutButton<LabelContent: View>: View {
   /// Initializes a shortcut button with a text title and automatically derives a Command + FirstLetter shortcut.
   public init(
     _ title: String,
-    displayShortcutOverlay: Bool = true,
+    shortcutDisplayMode: ShortcutDisplayMode = .automatic,
     allowShortcutAssignment: Bool = false,
     showAssignShortcutIcon: Bool = false,
     isDefaultActionEquivalent: Bool = false, // Added isDefaultActionEquivalent
@@ -112,7 +120,7 @@ public struct KeyboardAwareShortcutButton<LabelContent: View>: View {
     self.init(
       initialKey: firstCharKey,
       initialModifiers: .command,
-      displayShortcutOverlay: displayShortcutOverlay,
+      shortcutDisplayMode: shortcutDisplayMode,
       allowShortcutAssignment: allowShortcutAssignment,
       showAssignShortcutIcon: showAssignShortcutIcon,
       isDefaultActionEquivalent: isDefaultActionEquivalent, // Pass through
@@ -131,7 +139,7 @@ public struct KeyboardAwareShortcutButton<LabelContent: View>: View {
   public init(
     initialKey: KeyEquivalent? = nil,
     initialModifiers: EventModifiers = .command,
-    displayShortcutOverlay: Bool = true,
+    shortcutDisplayMode: ShortcutDisplayMode = .automatic,
     allowShortcutAssignment: Bool = false,
     showAssignShortcutIcon: Bool = false,
     isDefaultActionEquivalent: Bool = false, // Added isDefaultActionEquivalent
@@ -146,7 +154,7 @@ public struct KeyboardAwareShortcutButton<LabelContent: View>: View {
     self.init(
       initialKey: initialKey,
       initialModifiers: initialModifiers,
-      displayShortcutOverlay: displayShortcutOverlay,
+      shortcutDisplayMode: shortcutDisplayMode,
       allowShortcutAssignment: allowShortcutAssignment,
       showAssignShortcutIcon: showAssignShortcutIcon,
       isDefaultActionEquivalent: isDefaultActionEquivalent, // Pass through
@@ -164,7 +172,7 @@ public struct KeyboardAwareShortcutButton<LabelContent: View>: View {
   public init(
     initialKey: KeyEquivalent? = nil,
     initialModifiers: EventModifiers = .command,
-    displayShortcutOverlay: Bool = true,
+    shortcutDisplayMode: ShortcutDisplayMode = .automatic,
     allowShortcutAssignment: Bool = false,
     showAssignShortcutIcon: Bool = false,
     isDefaultActionEquivalent: Bool = false, // NEW: Parameter to make it also default
@@ -180,7 +188,7 @@ public struct KeyboardAwareShortcutButton<LabelContent: View>: View {
     self.label = label
     self._currentShortcutKey = State(initialValue: initialKey)
     self._currentShortcutModifiers = State(initialValue: initialModifiers)
-    self.displayShortcutOverlay = displayShortcutOverlay
+    self.shortcutDisplayMode = shortcutDisplayMode
     self.allowShortcutAssignment = allowShortcutAssignment
     self.showAssignShortcutIcon = showAssignShortcutIcon
     self.isDefaultActionEquivalent = isDefaultActionEquivalent // Store it
@@ -191,12 +199,10 @@ public struct KeyboardAwareShortcutButton<LabelContent: View>: View {
     self.accessibilityIdentifierAssignButton = accessibilityIdentifierAssignButton
   }
   
-  // ... (keyEquivalentDisplayString, modifiersDisplayString, etc. remain the same) ...
   func keyEquivalentDisplayString(for key: KeyEquivalent) -> String {
     let char_fb = key.character
     if char_fb == KeyEquivalent.space.character { return "Space" }
     if char_fb == KeyEquivalent.return.character { return "↩" }
-    // ... rest of the conditions
     if char_fb == KeyEquivalent.tab.character { return "⇥" }
     if char_fb == KeyEquivalent.escape.character { return "⎋" }
     if char_fb == KeyEquivalent.delete.character { return "⌫" }
@@ -232,30 +238,34 @@ public struct KeyboardAwareShortcutButton<LabelContent: View>: View {
   
   private var shortcutDisplayString: String? {
     guard let key = currentShortcutKey else { return nil }
-    // Don't show "↩" if it's the primary key and isDefaultActionEquivalent is true,
-    // unless displayShortcutOverlay is specifically for it.
-    // This logic could be refined if the "↩" display needs more nuance.
-    if isDefaultActionEquivalent && key.character == KeyEquivalent.return.character && !displayShortcutOverlay {
-      // If it's a default action whose primary key is .return, and overlay is off for it,
-      // don't show any shortcut string. This avoids showing "↩" by default for these.
-      // If another primary key is set, that one will be shown.
-      return nil
+    // Don't show "↩" if it's the primary key for a default action button and the hint display mode is .never
+    if isDefaultActionEquivalent && key.character == KeyEquivalent.return.character && shortcutDisplayMode == .never {
+        return nil
     }
     let modString = modifiersDisplayString(for: currentShortcutModifiers)
     return "\(modString)\(keyEquivalentDisplayString(for: key))"
   }
   
   private func shouldShowShortcutTextInfo() -> Bool {
-    // Only show the specific "Press new shortcut..." if assignment is enabled for this button.
+    // Determine if there is any text content to display.
     let showAssignText = allowShortcutAssignment && isAssigningShortcut
+    let hasContentToShow = showAssignText || shortcutDisplayString != nil || currentShortcutKey == nil
     
-    // Show general shortcut info if:
-    // 1. Overlay is enabled AND
-    // 2. We are assigning OR there's a shortcut to display (or no shortcut is set yet) AND
-    // 3. Keyboard is connected.
-    return displayShortcutOverlay &&
-    (showAssignText || shortcutDisplayString != nil || currentShortcutKey == nil) &&
-    externalKeyboardMonitor.isExternalKeyboardConnected
+    guard hasContentToShow else { return false }
+    
+    // Apply the display mode logic.
+    switch shortcutDisplayMode {
+    case .never:
+      return false
+    case .always:
+      return true
+    case .automatic:
+      // In assignment mode, always show the "Press new shortcut..." text if a keyboard is connected.
+      if isAssigningShortcut { return externalKeyboardMonitor.isExternalKeyboardConnected }
+      
+      // For regular display, show if keyboard is connected and there's a shortcut to display.
+      return externalKeyboardMonitor.isExternalKeyboardConnected && (shortcutDisplayString != nil || currentShortcutKey == nil)
+    }
   }
   
   @ViewBuilder
@@ -268,9 +278,9 @@ public struct KeyboardAwareShortcutButton<LabelContent: View>: View {
       Text(shortcutStr)
         .font(.caption)
         .foregroundColor(.secondary)
-    } else if currentShortcutKey == nil && displayShortcutOverlay { // Only show (No shortcut) if overlay is on
-      // And also avoid showing "(No shortcut)" if this is a default action button
-      // whose primary key is .return and its overlay is off.
+    } else if currentShortcutKey == nil { // Show "(No shortcut)" if no key is assigned
+      // And also avoid showing "(No shortcut)" for a default action button
+      // that doesn't have a separate primary key.
       if !(isDefaultActionEquivalent && (currentShortcutKey == nil || currentShortcutKey?.character == KeyEquivalent.return.character)) {
         Text("(No shortcut)")
           .font(.caption)
@@ -357,7 +367,7 @@ public struct KeyboardAwareShortcutButton<LabelContent: View>: View {
       mainButtonWithPrimaryShortcut
       
       if #available(iOS 17.0, macOS 14.0, tvOS 17.0, watchOS 10.0, *) {
-        if allowShortcutAssignment && showAssignShortcutIcon && externalKeyboardMonitor.isExternalKeyboardConnected && displayShortcutOverlay {
+        if allowShortcutAssignment && showAssignShortcutIcon && shortcutDisplayMode != .never && externalKeyboardMonitor.isExternalKeyboardConnected {
           assignShortcutButtonView
         }
       }
